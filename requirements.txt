@@ -2,5 +2,3 @@ alabaster
 sphinx
 matplotlib
 numpy
--e git+https://github.com/fred3m/scarlet_extensions.git
--e git+https://github.com/pmelchior/scarlet.git

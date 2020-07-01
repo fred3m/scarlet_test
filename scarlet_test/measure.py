@@ -1,11 +1,9 @@
 import os
-from typing import List, Union, Sequence, Dict, Tuple
+from typing import List, Sequence, Dict, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import ticker as mticker
-from scarlet import Component, ComponentTree
-import scarlet.measure
 
 from .core import __DATA_PATH__, get_filename, get_prs
 
@@ -21,7 +19,7 @@ def adjacent_values(vals: np.ndarray, q1: int, q3: int) -> Tuple[np.ndarray, np.
 
 def measure_blend(
         data: np.ndarray,
-        sources: List[Union[Component, ComponentTree]],
+        sources: List,
         filters: Sequence[str],
 ) -> List[Dict[str, float]]:
     """
@@ -32,6 +30,8 @@ def measure_blend(
     :param filters: The filter name for each band
     :return: List of measurements for each matched source
     """
+    import scarlet.measure
+
     # Extract necessary fields from the data
     centers = data["centers"]
     matched = data["matched"]
