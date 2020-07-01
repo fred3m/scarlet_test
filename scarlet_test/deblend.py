@@ -2,12 +2,13 @@ import os
 import time
 
 import numpy as np
-import scarlet
-from scarlet_extensions.initialization import initAllSources
 from .measure import measure_blend
 
 
 def deblend(blend_id: str, max_iter: int, e_rel: float, data_path: str, filters: str):
+    import scarlet
+    from scarlet_extensions.initialization import initAllSources
+
     # Load the sample images
     filename = os.path.join(data_path, "{}.npz".format(blend_id))
     data = np.load(filename)
