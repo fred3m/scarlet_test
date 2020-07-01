@@ -16,6 +16,5 @@ setuptools.setup(
     author="Fred Moolekamp, Peter Melchior, and Remy Joseph",
     author_email="peter.m.melchior@gmail.com",
     url="https://github.com/fred3m/scarlet_test",
-    install_requires=["scarlet"],
     scripts=["bin/scarlet_test"]
 )
