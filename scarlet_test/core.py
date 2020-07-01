@@ -5,7 +5,6 @@ import shutil
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scarlet import display
 
 from . import deblend
 from . import settings
@@ -124,6 +123,8 @@ def deblend_residuals(set_id: str, pr: str, overwrite: bool = False, save_path: 
     :param overwrite: Whether or not it is ok to rewrite the existing PR
     :param save_path: Path to save the data to. This is usually `__SCENE_PATH__`.
     """
+    from scarlet import display
+
     if save_path is not None:
         create_path(save_path)
         check_data_existence(save_path, set_id, pr, overwrite)
