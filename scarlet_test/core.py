@@ -42,9 +42,9 @@ def get_prs() -> Dict[str, List[str]]:
 def save_prs(pr: str):
     prs = get_prs()
     if pr not in prs:
-        prs["PR"].append(pr)
+        prs.append(pr)
         f = open(__PR_PATH__, "w")
-        json.dump(prs, f)
+        json.dump({"PR": prs}, f)
         f.close()
 
 
@@ -57,7 +57,7 @@ def check_data_existence(path: str, set_id: str, pr: str, overwrite: bool) -> bo
     :param overwrite: Whether or not it is ok to rewrite the existing PR
     :return: `True` if the pr can be written
     """
-    prs = get_prs(path)
+    prs = get_prs()
     if pr in prs and not overwrite:
         msg = "PR {} has already been analyzed for set {}, to overwrite set the `overwrite` flag"
         raise ValueError(msg.format(pr, set_id))
