@@ -110,7 +110,7 @@ class Metric:
         """
         if data_path is None:
             data_path = os.path.join(__DATA_PATH__, set_id)
-        all_prs = get_prs(data_path)
+        all_prs = get_prs()
         if scatter_prs is None:
             # Use the last two PRs
             scatter_prs = all_prs[-2:]

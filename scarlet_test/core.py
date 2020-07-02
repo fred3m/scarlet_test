@@ -1,6 +1,7 @@
+import json
 import os
 import errno
-from typing import List
+from typing import List, Dict
 import shutil
 
 import numpy as np
@@ -17,6 +18,7 @@ __BLEND_PATH__ = os.path.join(__DATA_PATH__, "blends")
 __DOCS_PATH__ = os.path.join(__ROOT__, "docs")
 __PLOT_PATH__ = os.path.join(__DOCS_PATH__, "plots")
 __SCENE_PATH__ = os.path.join(__PLOT_PATH__)
+__PR_PATH__ = os.path.join(__ROOT__, "prs.json")
 
 
 def get_blend_ids(set_id: str) -> List[str]:
@@ -29,9 +31,21 @@ def get_blend_ids(set_id: str) -> List[str]:
     return id_data[set_id]
 
 
-def get_prs(path: str):
+def get_prs() -> Dict[str, List[str]]:
     # Make sure that the set id is valid
-    return [f.split(".")[0] for f in os.listdir(path)]
+    f = open(__PR_PATH__, "r")
+    prs = json.load(f)
+    f.close()
+    return prs["PR"]
+
+
+def save_prs(pr: str):
+    prs = get_prs()
+    if pr not in prs:
+        prs["PR"].append(pr)
+        f = open(__PR_PATH__, "w")
+        json.dump(prs, f)
+        f.close()
 
 
 def check_data_existence(path: str, set_id: str, pr: str, overwrite: bool) -> bool:
@@ -111,6 +125,7 @@ def deblend_and_measure(set_id: str, pr: str, overwrite: bool = False, save_path
     # Save the data if a path was provided
     if save_path is not None:
         np.savez(os.path.join(save_path, get_filename(pr)), records=records)
+        save_prs(pr)
     return records
 
 
