@@ -2,4 +2,3 @@ alabaster
 sphinx
 matplotlib
 numpy
--e git+https://github.com/fred3m/scarlet_test.git#egg=scarlet_test
