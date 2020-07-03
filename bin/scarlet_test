@@ -1,3 +1,4 @@
+import os
 import argparse
 from scarlet_test.core import deblend_and_measure, deblend_residuals, __DATA_PATH__, __SCENE_PATH__
 
@@ -11,10 +12,15 @@ def main():
 
     args = parser.parse_args()
     assert args.pr is not None
-    set_name = "set{}".format(args.set)
-    assert set_name in ("set1", "set2", "set3")
-    deblend_and_measure(set_name, args.pr, args.overwrite, __DATA_PATH__)
-    deblend_residuals(set_name, args.pr, args.overwrite, __SCENE_PATH__)
+    set_id = "set{}".format(args.set)
+
+    data_path = os.path.join(__DATA_PATH__, "set1")
+    if set_id in ["set1", "set2"]:
+        deblend_and_measure(set_id, args.pr, args.overwrite, data_path)
+    elif set_id == "set3":
+        deblend_residuals(set_id, args.pr, args.overwrite, __SCENE_PATH__)
+    else:
+        raise ValueError("set_id must be in ['set1', 'set2',, 'set3', got {}".format(set_id))
 
 
 if __name__ == "__main__":
