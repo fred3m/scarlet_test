@@ -1,22 +1,32 @@
-import os
 import time
+from typing import Dict
 
 import numpy as np
 from .measure import measure_blend
+from . import settings
 
 
-def deblend(blend_id: str, max_iter: int, e_rel: float, data_path: str, filters: str):
+def deblend(data: Dict[str, np.ndarray], max_iter: int, e_rel: float):
+    """Deblend a single blend
+
+    :param data: The numpy dictionary of data to deblend.
+    :param max_iter: The maximum number of iterations
+    :param e_rel: relative error
+    :return: tuple:
+        * `measurements`: The measurements made on the blend and matched model(s)
+        * `observation`: The observation data.
+        * `sources`: The deblended models.
+    """
     import scarlet
     from scarlet_extensions.initialization import initAllSources
 
     # Load the sample images
-    filename = os.path.join(data_path, "{}.npz".format(blend_id))
-    data = np.load(filename)
     images = data["images"]
     mask = data["footprint"]
     weights = 1 / data["variance"] * ~mask
     centers = data["centers"]
     psfs = scarlet.PSF(data["psfs"])
+    filters = settings.filters
 
     # Initialize the model, frame, observation, and sources
     t0 = time.time()
@@ -63,8 +73,8 @@ def deblend(blend_id: str, max_iter: int, e_rel: float, data_path: str, filters:
     for k in skipped:
         sources.insert(k, None)
 
-    source_measurements = measure_blend(data, sources, filters)
+    source_measurements = measure_blend(data, sources, observation.channels)
     for measurement in source_measurements:
         measurement.update(measurements)
 
-    return source_measurements, images, observation, sources
+    return source_measurements, observation, sources

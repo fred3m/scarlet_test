@@ -1,14 +1,21 @@
 import os
-from typing import List, Sequence, Dict, Tuple
+from typing import List, Sequence, Dict, Tuple, Union
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import ticker as mticker
 
-from .core import __DATA_PATH__, get_filename, get_prs
+from .core import __DATA_PATH__, get_filename, get_branches
 
 
 def adjacent_values(vals: np.ndarray, q1: int, q3: int) -> Tuple[np.ndarray, np.ndarray]:
+    """Get adjacent values for whiskers
+
+    :param vals: The array that is being plotted
+    :param q1: The lower quartile
+    :param q3: The upper quartile
+    :return: lower whisker and upper whisker value
+    """
     upper_adjacent_value = q3 + (q3 - q1) * 1.5
     upper_adjacent_value = np.clip(upper_adjacent_value, q3, vals[-1])
 
@@ -56,7 +63,13 @@ def measure_blend(
     return measurements
 
 
-def check_log(data, ax):
+def check_log(data: np.ndarray, ax: plt.axis):
+    """Check to see if the data should use a log scale
+
+    :param data: array that is being plotted
+    :param ax: The axis that contains the plot
+    :return: Whether or not to use a log scale
+    """
     _data = np.log10(data)
     ymin, ymax = np.min(_data), np.max(_data)
     # Use a log scale if the range is more than 2 orders of magnitude
@@ -72,64 +85,60 @@ def check_log(data, ax):
 
 
 class Metric:
-    """
-    A metric to be calculated based on a set of deblended sources
+    """A metric to be calculated based on a set of deblended sources
     """
     def __init__(
             self,
             name: str,
             units: str,
-            use_abs: bool = False
     ):
-        """
-        Initialize the class
+        """Initialize the class
+
         :param name: Name of the metric.
         :param units: Units of the metric.
         :param use_abs: Whether or not this metric is an absolute value
         """
         self.name = name
         self.units = units
-        self.use_abs = use_abs
 
     def plot(
             self,
             set_id: str,
-            scatter_prs: List[str] = None,
-            plot_prs: List[str] = None,
-            data_path: str = None,
-    ) -> None:
-        """
-        Create a plot using the records for a given set ID.
+            measurements: Dict[str, np.rec.recarray] = None,
+            plot_indices: Sequence = None,
+            scatter_indices: Sequence = None,
+    ) -> plt.Figure:
+        """Create a plot using the records for a given set ID.
 
         :param set_id: ID of the set to analyze
-        :param scatter_prs: A list of pull requests to plot.
-            If `prs` is `None` then only the last 2 PRs are plotted.
-        :param plot_prs: A list of pull requests to plot.
-            If `prs` is `None` then all PRs are shown.
-        :parama data_path: Location of the measurement data.
+        :param measurements: Dictionary (branch name, measurments)
+            of measurements for each branch.
+        :param plot_indices: The indices or slice of `measurements`
+            to plot. If `plot_indices` is `None` then only the
+            10 latest branches are used.
+        :param scatter_indices: The indices or slice of `measurements`
+            to include in the scatter plot. If `scatter_indices` is `None`
+            then only the last two branches are plotted.
         """
-        if data_path is None:
-            data_path = os.path.join(__DATA_PATH__, set_id)
-        all_prs = get_prs()
-        if scatter_prs is None:
-            # Use the last two PRs
-            scatter_prs = all_prs[-2:]
-        if plot_prs is None:
-            # Plot all the PRs if none are specified
-            plot_prs = all_prs
+        if measurements is None:
+            branches = get_branches()
+            measurements = {
+                branch: np.load(os.path.join(__DATA_PATH__, set_id, get_filename(branch)))["records"]
+                for branch in branches
+            }
+        if plot_indices is None:
+            plot_indices = slice(-10, None)
+        if scatter_indices is None:
+            scatter_indices = slice(-2, None)
 
+        # First display the scatter plots
         fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-
-        # First display all of the scatter plots for the two most recent PRs
-        records = {
-            pr: np.load(os.path.join(data_path, get_filename(pr)))["records"]
-            for pr in scatter_prs
-        }
+        records = {m: measurements[m] for m in list(measurements.keys())[scatter_indices]}
         num_prs = len(records)
 
         # Check to see if we need to plot a log axis
         islog = False
-        for rec, (pr, record) in enumerate(records.items()):
+        for rec, (branch, record) in enumerate(records.items()):
             islog |= check_log(record[self.name], ax[2])
 
         # Display the scatter plot for each PR
@@ -143,11 +152,8 @@ class Metric:
         ax[2].legend()
         ax[2].set_xlabel("blend index")
 
-        # Load the records for all of the violin and box plot PRs
-        records = {
-            pr: np.load(os.path.join(__DATA_PATH__, set_id, get_filename(pr)))["records"]
-            for pr in plot_prs
-        }
+        # Next create the violin and box plots
+        records = {m: measurements[m] for m in list(measurements.keys())[plot_indices]}
 
         for ax_n, plot_type in enumerate(["box", "violin"]):
             # Extract the data
@@ -187,16 +193,19 @@ class Metric:
         ax[0].set_ylabel(self.units)
         fig.suptitle(self.name)
 
+        return fig
 
+
+# All of the metrics that are stored and plotted for regression testing
 all_metrics = {
-    "init time": Metric("init time", "time (ms)", False),
-    "runtime": Metric("runtime", "time/source (ms)", False),
-    "iterations": Metric("iterations", "iterations", False),
-    "init logL": Metric("init logL", "logL", True),
-    "logL": Metric("logL", "logL", True),
-    "g diff": Metric("g diff", "truth-model", True),
-    "r diff": Metric("r diff", "truth-model", True),
-    "i diff": Metric("i diff", "truth-model", True),
-    "z diff": Metric("z diff", "truth-model", True),
-    "y diff": Metric("y diff", "truth-model", True),
+    "init time": Metric("init time", "time (ms)"),
+    "runtime": Metric("runtime", "time/source (ms)"),
+    "iterations": Metric("iterations", "iterations"),
+    "init logL": Metric("init logL", "logL"),
+    "logL": Metric("logL", "logL"),
+    "g diff": Metric("g diff", "truth-model"),
+    "r diff": Metric("r diff", "truth-model"),
+    "i diff": Metric("i diff", "truth-model"),
+    "z diff": Metric("z diff", "truth-model"),
+    "y diff": Metric("y diff", "truth-model"),
 }

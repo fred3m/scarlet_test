@@ -1,24 +1,24 @@
 import os
 import argparse
-from scarlet_test.core import deblend_and_measure, deblend_residuals, __DATA_PATH__, __SCENE_PATH__
+from scarlet_test.core import deblend_and_measure, __DATA_PATH__, __SCENE_PATH__
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--set", type=int, help="The data set to deblend and calculate metrics")
-    parser.add_argument("-p", "--pr", type=str, help="The current PR that is being analyzed")
+    parser.add_argument("-b", "--branch", type=str, help="The current branch that is being analyzed")
     parser.add_argument("-o", "--overwrite", action="store_true",
-                        help="Whether or not to overwrite this PR if it exists")
+                        help="Whether or not to overwrite this branch if it exists")
 
     args = parser.parse_args()
-    assert args.pr is not None
+    assert args.set is not None
+    assert args.branch is not None
     set_id = "set{}".format(args.set)
 
-    data_path = os.path.join(__DATA_PATH__, "set1")
     if set_id in ["set1", "set2"]:
-        deblend_and_measure(set_id, args.pr, args.overwrite, data_path)
+        deblend_and_measure(set_id, args.branch, args.overwrite, save=True)
     elif set_id == "set3":
-        deblend_residuals(set_id, args.pr, args.overwrite, __SCENE_PATH__)
+        deblend_and_measure(set_id, args.branch, args.overwrite, save=True, plot_residuals=True)
     else:
         raise ValueError("set_id must be in ['set1', 'set2',, 'set3', got {}".format(set_id))
 
