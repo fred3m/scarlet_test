@@ -22,13 +22,21 @@ __SCENE_PATH__ = os.path.join(__PLOT_PATH__)
 __BRANCH_FILE__ = os.path.join(__ROOT__, "branches.json")
 
 
-def get_blend_ids(path: str) -> List[str]:
+def get_blend_ids(path: str=None, set_id: str=None) -> List[str]:
     """Get all of the blend IDs contained in the set
 
+    Either `path` or `set_id` must be given.
+
     :param path: Path to blends
+    :param set_id: Set containing blend ids
     :return: List of blend IDs
     """
-    return [f.split(".")[0] for f in os.listdir(path)]
+    if path:
+        blend_ids = [f.split(".")[0] for f in os.listdir(path)]
+    else:
+        id_data = np.load(os.path.join(__BLEND_PATH__, "test_ids.npz"))
+        blend_ids = id_data[set_id]
+    return blend_ids
 
 
 def get_branches() -> List[str]:
@@ -94,22 +102,28 @@ def get_filename(pr: str) -> str:
 
 
 def deblend_and_measure(
-        set_id: str,
+        set_id: str = None,
         branch: str = None,
         overwrite: bool = False,
         data_path: str = None,
-        save: bool = False,
+        save_records: bool = False,
+        save_residuals: bool = False,
         plot_residuals: bool = False,
         deblender: Callable = None,
 ) -> np.rec.recarray:
     """Deblend an entire test set and store the measurements
 
-    :param set_id: ID of the set to analyze
-    :param branch: The scarlet branch to test (only needed if `save` is `True`)
+    :param set_id: ID of the set to analyze.
+        This is only needed if `data_path` is `None` and
+        `save` is `True`.
+    :param branch: The scarlet branch to test
+        (only needed if `save_records` or `save_residuals` is `True`)
     :param overwrite: Whether or not it is ok to rewrite the existing branch
     :param data_path: The path to the blend data. If no `data_path is specified
         then __BLEND_PATH__ is used.
-    :param save: Whether or not to save the measurements records.
+    :param save_records: Whether or not to save the measurements records.
+    :param save_residuals: Whether or not to save the residual plots
+        (only necessary when `plot_residuals=True`).
     :param plot_residuals: Whether or not to plot the residuals.
     :param deblender: The function to use to deblend. This function should only take
         1 argument:
@@ -126,7 +140,10 @@ def deblend_and_measure(
     """
     if data_path is None:
         data_path = os.path.join(__BLEND_PATH__, set_id)
-    if save:
+        blend_ids = get_blend_ids(set_id=set_id)
+    else:
+        blend_ids = get_blend_ids(path=data_path)
+    if save_records:
         check_data_existence(set_id, branch, overwrite)
     # Use the default `scarlet_extensions` `deblend` if the user hasn't specified their own
     if deblender is None:
@@ -137,10 +154,8 @@ def deblend_and_measure(
         )
 
     # Deblend the scene
-    results = []
+    all_measurements = []
 
-    # Load the blend data
-    blend_ids = get_blend_ids(set_id)
     num_blends = len(blend_ids)
     for bidx, blend_id in enumerate(blend_ids):
         print("blend {} of {}: {}".format(bidx, num_blends, blend_id))
@@ -149,6 +164,7 @@ def deblend_and_measure(
         data = np.load(filename)
         results = deblender(data)
         measurements, observation, sources = results
+        all_measurements += measurements
 
         if plot_residuals:
             import scarlet.display as display
@@ -158,7 +174,7 @@ def deblend_and_measure(
                                show_residual=True, norm=norm, figsize=(15, 5))
             plt.suptitle(branch, y=1.05)
 
-            if save:
+            if save_residuals:
                 filename = os.path.join(__SCENE_PATH__, "{}.scene.png".format(blend_id))
                 if os.path.exists(filename):
                     # Copy the current version as the old filename
@@ -170,11 +186,11 @@ def deblend_and_measure(
                 plt.show()
 
     # Combine all of the records together and save
-    _records = [tuple(m.values()) for m in results]
-    keys = tuple(results[0].keys())
+    _records = [tuple(m.values()) for m in all_measurements]
+    keys = tuple(all_measurements[0].keys())
     records = np.rec.fromrecords(_records, names=keys)
     # Save the data if a path was provided
-    if save is not None:
+    if save_records:
         np.savez(os.path.join(__DATA_PATH__, set_id, get_filename(branch)), records=records)
         save_branch(branch)
     return records

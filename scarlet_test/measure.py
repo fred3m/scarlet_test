@@ -25,7 +25,7 @@ def adjacent_values(vals: np.ndarray, q1: int, q3: int) -> Tuple[np.ndarray, np.
 
 
 def measure_blend(
-        data: np.ndarray,
+        data: Dict[str, np.ndarray],
         sources: List,
         filters: Sequence[str],
 ) -> List[Dict[str, float]]:

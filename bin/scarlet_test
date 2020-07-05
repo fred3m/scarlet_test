@@ -16,9 +16,9 @@ def main():
     set_id = "set{}".format(args.set)
 
     if set_id in ["set1", "set2"]:
-        deblend_and_measure(set_id, args.branch, args.overwrite, save=True)
+        deblend_and_measure(set_id, args.branch, args.overwrite, save_records=True)
     elif set_id == "set3":
-        deblend_and_measure(set_id, args.branch, args.overwrite, save=True, plot_residuals=True)
+        deblend_and_measure(set_id, args.branch, args.overwrite, plot_residuals=True, save_residuals=True)
     else:
         raise ValueError("set_id must be in ['set1', 'set2',, 'set3', got {}".format(set_id))
 

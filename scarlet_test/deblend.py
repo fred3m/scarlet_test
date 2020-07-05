@@ -42,7 +42,8 @@ def deblend(data: Dict[str, np.ndarray], max_iter: int, e_rel: float):
         images,
         psfs=psfs,
         weights=weights,
-        channels=filters).match(model_frame)
+        channels=filters)
+    observation.match(model_frame)
 
     sources, skipped = initAllSources(model_frame, centers, observation, maxComponents=2, edgeDistance=None)
 
@@ -73,7 +74,7 @@ def deblend(data: Dict[str, np.ndarray], max_iter: int, e_rel: float):
     for k in skipped:
         sources.insert(k, None)
 
-    source_measurements = measure_blend(data, sources, observation.channels)
+    source_measurements = measure_blend(data, sources, observation.frame.channels)
     for measurement in source_measurements:
         measurement.update(measurements)
 
