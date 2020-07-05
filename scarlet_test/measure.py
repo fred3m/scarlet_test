@@ -191,7 +191,8 @@ class Metric:
         ax[1].set_xticklabels(x_labels, size='small', rotation='vertical')
 
         ax[0].set_ylabel(self.units)
-        fig.suptitle(self.name)
+        fig.suptitle(self.name, y=.95)
+        plt.tight_layout()
 
         return fig
 
